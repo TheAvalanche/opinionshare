@@ -33,7 +33,7 @@ public class TopicController {
 	
 	@RequestMapping(method = RequestMethod.GET)
 	public List<TopicBean> getAll() {
-		Iterable<Topic> topics = topicRepository.findAll();
+		Iterable<Topic> topics = topicRepository.findAllByOrderByIdDesc();
 		return Lists.newArrayList(converter.convert(topics));
 	}
 

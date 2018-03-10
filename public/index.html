@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>OpinionShare</title>
+		<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+		
+		
+	</head>
+	<body>
+		<h1 class="text-center">OpinionShare</h1>
+		<hr>
+		<div class="container">
+			<div class="row">
+				<div class="col-8">
+					<input type="text" class="form-control" id="topic-input">
+				</div>
+				<div class="col-4">
+					<button class="btn btn-primary btn-block" id="add-topic">Add topic</button>
+				</div>
+			</div>
+			
+			<div class="row my-3" id="topics">
+				
+			</div>
+		</div>
+		
+		<div class="alert alert-success alert-dismissible fade" role="alert">
+			<b>Your topic has been added!</b>
+			<button type="button" class="close" data-dismiss="alert">
+				<span>&times;</span>
+			</button>
+		</div>
+	
+	<script>
+		
+		$.ajaxSetup({
+			contentType: "application/json"
+		});
+		
+		$("#add-topic").click(function(){
+			var input = $("#topic-input").val();
+			
+			if (input === "") {
+				return;
+			}
+			var data = {
+				title: input
+			};
+			
+			$.post("/topic", JSON.stringify(data), function (data) {
+				$("#topic-input").val("");
+				$(".alert").toggleClass("show");
+				setTimeout(function () {
+					$(".alert").toggleClass("show");
+				}, 3000);
+				refresh();
+			});
+		});
+		
+		function refresh() {
+			$.get("/topic", function(data) {
+				$("#topics").empty();
+				$.each(data, function(idx, value){
+					$("<div>", {
+						html: topicTemplate(value),
+						"class": "col-12"
+					}).appendTo("#topics");
+				})
+			})
+		}
+		
+		function topicTemplate(topic) {
+			var template = "<div class='card'>" +
+								"<div class='card-header' id='heading" + topic.id + "'>" +
+									"<h5 class='mb-0'>" + 
+										"<button class='btn btn-link' data-toggle='collapse' data-target='#collapse" + topic.id + "'>" + 
+										topic.title +
+										"</button>" +
+									"</h5>" + 
+								"</div>" + 
+								"<div id='collapse" + topic.id + "' class='collapse' data-parent='#topics'>" + 
+									"<div class='card-body'>" + 
+										"Opinion" +
+									"</div>" + 
+								"</div>" + 
+							"</div>";
+			return template;
+			
+		}
+		
+		refresh();
+	</script>
+	</body>
+</html>
