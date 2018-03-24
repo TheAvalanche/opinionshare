@@ -6,8 +6,12 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-		
-		
+
+		<style>
+			#templates {
+				display: none;
+			}
+		</style>
 	</head>
 	<body>
 		<h1 class="text-center">OpinionShare</h1>
@@ -28,11 +32,46 @@
 		</div>
 		
 		<div class="alert alert-success alert-dismissible fade" role="alert">
-			<b>Your topic has been added!</b>
+			<b>New entry has been added!</b>
 			<button type="button" class="close" data-dismiss="alert">
 				<span>&times;</span>
 			</button>
 		</div>
+
+		<div id="templates">
+			<div class="topicTemplate col-12">
+				<div class='card'>
+					<div class='card-header' id='heading{topicId}'>
+						<h5 class='mb-0'>
+							<button class='btn btn-link' data-toggle='collapse' data-target='#collapse{topicId}' onclick="refreshOpinions({topicId})">
+								{topicTitle}
+							</button>
+						</h5>
+					</div>
+					<div id='collapse{topicId}' class='collapse' data-parent='#topics'>
+						<div class='card-body'>
+							<div class="row">
+								<div class="col-6">
+									<input type="text" class="form-control" id="opinion-input-{topicId}">
+								</div>
+								<div class="col-6">
+									<button class="btn btn-success" id="add-opinion-{topicId}" onclick="addOpinion({topicId})">Add opinion</button>
+								</div>
+							</div>
+							<div class="row my-3" id="opinions-{topicId}">
+
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<div class="opinionsTemplate col-12">
+				<p> <a href="#" onclick="decrement({topicId}, {opinionId})">-</a> <span class="badge badge-dark">{opinionRating}</span> <a href="#" onclick="increment({topicId}, {opinionId})">+</a> &nbsp; {opinionText}</p>
+			</div>
+			
+		</div>
+		
 	
 	<script>
 		
@@ -64,31 +103,68 @@
 			$.get("/topic", function(data) {
 				$("#topics").empty();
 				$.each(data, function(idx, value){
-					$("<div>", {
-						html: topicTemplate(value),
-						"class": "col-12"
-					}).appendTo("#topics");
+					var copy = $("#templates .topicTemplate").clone();
+					var copyHtml = copy.prop("outerHTML");
+					copyHtml = copyHtml.replace(/{topicId}/g, value.id);
+					copyHtml = copyHtml.replace(/{topicTitle}/g, value.title);
+					$(copyHtml).appendTo("#topics");
 				})
 			})
 		}
 		
-		function topicTemplate(topic) {
-			var template = "<div class='card'>" +
-								"<div class='card-header' id='heading" + topic.id + "'>" +
-									"<h5 class='mb-0'>" + 
-										"<button class='btn btn-link' data-toggle='collapse' data-target='#collapse" + topic.id + "'>" + 
-										topic.title +
-										"</button>" +
-									"</h5>" + 
-								"</div>" + 
-								"<div id='collapse" + topic.id + "' class='collapse' data-parent='#topics'>" + 
-									"<div class='card-body'>" + 
-										"Opinion" +
-									"</div>" + 
-								"</div>" + 
-							"</div>";
-			return template;
+		function addOpinion(topicId) {
+			var input = $("#opinion-input-" + topicId).val();
+
+			if (input === "") {
+				return;
+			}
+			var data = {
+				title: input,
+				rating: 0
+			};
 			
+			$.post("/opinion/" + topicId, JSON.stringify(data), function (data) {
+				$("#opinion-input-" + topicId).val("");
+				$(".alert").toggleClass("show");
+				setTimeout(function () {
+					$(".alert").toggleClass("show");
+				}, 3000);
+				refreshOpinions(topicId);
+			});
+		}
+		
+		function refreshOpinions(topicId) {
+			$.get("/opinion/" + topicId, function(data) {
+				$("#opinions-" + topicId).empty();
+				$.each(data, function(idx, value){
+					var copy = $("#templates .opinionsTemplate").clone();
+					var copyHtml = copy.prop("outerHTML");
+					copyHtml = copyHtml.replace(/{topicId}/g,  topicId);
+					copyHtml = copyHtml.replace(/{opinionId}/g, value.id);
+					copyHtml = copyHtml.replace(/{opinionText}/g, value.title);
+					copyHtml = copyHtml.replace(/{opinionRating}/g, value.rating);
+					if (value.rating > 0) {
+						copyHtml = copyHtml.replace(/badge-dark/g, "badge-success");
+					} else if (value.rating < 0) {
+						copyHtml = copyHtml.replace(/badge-dark/g, "badge-danger");
+					}
+					$(copyHtml).appendTo("#opinions-" + topicId);
+				})
+			})
+		}
+
+		function decrement(topicId, id) {
+			$.post("/opinion/ " + topicId + "/" + id + "/decrement",function () {
+				refreshOpinions(topicId);
+			});
+			return false;
+		}
+		
+		function increment(topicId, id) {
+			$.post("/opinion/ " + topicId + "/" + id + "/increment",function () {
+				refreshOpinions(topicId);
+			});
+			return false;
 		}
 		
 		refresh();

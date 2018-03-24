@@ -40,7 +40,7 @@ public class OpinionController {
 		
 		Topic topic =  topicRepository.findOne(topicId);
 		
-		Iterable<Opinion> opinions = opinionRepository.findAllByTopic(topic);
+		Iterable<Opinion> opinions = opinionRepository.findAllByTopicOrderByIdAsc(topic);
 		
 		return Lists.newArrayList(converter.convert(opinions));
 		
